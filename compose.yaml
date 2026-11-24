@@ -1,0 +1,32 @@
+
+services:
+  agent:
+    build: .
+    env_file: .env
+    environment:
+      DB_PATH: /data/runs.db
+      APP_ID: ${APP_ID:-buggy-app-001}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - agent_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  buggy-app:
+    build: ../bugpilot-buggy-app
+    environment:
+      APP_ID: ${APP_ID:-buggy-app-001}
+      AGENT_URL: http://agent:8000
+    ports:
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      agent:
+        condition: service_healthy
+
+volumes:
+  agent_data:
+
